@@ -1,0 +1,601 @@
+---
+title: "Regresiones tamaño y tipo"
+author: "D. Daza"
+date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
+output:
+  word_document:
+    toc: yes
+    toc_depth: 2
+header-includes:
+  - \usepackage{newtxtext,newtxmath}
+  - \usepackage{booktabs}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      error = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      comment = NA,
+                      fig.align = "center")
+```
+
+# Paqueterías
+
+```{r, echo=FALSE}
+#Paquetería que será utilizada
+
+library(sjPlot)
+library(haven)
+library(tidyverse)
+library(broom)
+library(dplyr)
+library(DT)
+library(ggplot2)
+library(leaflet)
+library(sjmisc)
+library(sjlabelled)
+library(readxl)
+library(kableExtra)
+library(tidyr)
+library(rmarkdown)
+library(tinytex)
+library(knitr)
+
+library(stargazer)
+library(readr)
+library(data.table)
+library(officer)
+library(foreign)
+
+library(officer)
+library(openxlsx)
+library(corrplot)
+library(stringr)
+library(car)
+
+library(MASS)
+library(moments)
+
+```
+
+# Claves y nombres de los municipios
+
+``` {r}
+#Definamos los códigos de los municipios de nuestro interés
+
+claves <- c("01001", "02002", "02004", "05030", "05035", "07089", "07101", "08019", "08037", "09002",
+            "09003", "09005", "09007", "09010", "09012", "09014", "09015", "09016", "09017", "11020",
+            "12001", "14039", "14120", "15033", "15057", "15058", "15104", "15106", "16052", "16053",
+            "19039", "20079", "21114", "22014", "24028", "25006", "26030", "27004", "28032", "30039",
+            "30193", "31050")
+
+#Creación con el nombre de los municipios que utilizaremos después
+
+municipios <- c("Aguascalientes", "Mexicali", "Tijuana", "Saltillo", 
+                        "Torreón", "Tapachula", "Tuxtla Gutiérrez", "Chihuahua",
+                        "Juárez", "Azcapotzalco", "Coyoacán", "Gustavo A. Madero",
+                        "Iztapalapa", "Álvaro Obregón", "Tlalpan", "Benito Juárez",
+                        "Cuauhtémoc", "Miguel Hidalgo", "Venustiano Carranza", "León",
+                        "Acapulco de Juárez", "Guadalajara", "Zapopan", "Ecatepec de Morelos",
+                        "Naucalpan de Juárez", "Nezahualcóyotl", "Tlalnepantla de Baz", "Toluca",
+                        "Lázaro Cárdenas", "Morelia", "Monterrey", "Salina Cruz",
+                        "Puebla", "Querétaro", "San Luis Potosí", "Culiacán",
+                        "Hermosillo", "Centro", "Reynosa", "Coatzacoalcos",
+                        "Veracruz", "Mérida")
+```
+
+# Carga de base de datos
+
+```{r}
+
+var <- read_excel("C:/Users/danie/OneDrive - CIDE/4to Semestre/tesina/modelo r/datos/LM2361-varctrl.xlsx")
+#ca <- read_excel("~/Procesamiento/Trabajo/LM2361-cae2.xlsx")
+basefull <- read_excel("C:/Users/danie/OneDrive - CIDE/4to Semestre/tesina/modelo r/datos/basefull_ca.xlsx")
+
+#Unión de bases
+
+#base <- merge(var, ca, by = "clavemuni", all = TRUE)
+#base <- merge(base, basefull, by = "clavemuni", all = TRUE)
+
+base <- merge(var, basefull, by = "clavemuni", all = TRUE)
+```
+
+# 1. Modelos
+
+Las variables menos significativas en general son tasa de desocupación y densidad pob
+
+## 1.1 Cargas vs Tipo
+
+```{r}
+
+#FORMAL GENERAL
+mfo1 <- lm(p_formal ~ ca_xe, data = base)
+
+summary(mfo1)
+
+#FORMAL CONTROLES
+mfo2 <- lm(p_formal ~ ca_xe +
+            p_informal + pobreza,
+          data = base)
+
+summary(mfo2)
+
+vif(mfo2)
+
+# Obtiene un data frame de los resultados del modelo
+mfo2_tidy <- broom::tidy(mfo2)
+
+# Convierte el data frame de los resultados del modelo en una tabla
+mfo2_table <- kable(mfo2_tidy, format = "pandoc", 
+                        caption = "Cargas administrativas y empresas formales", 
+                        col.names = c("Variable", "Estimado", "Error estándar", "Estadístico t", "Valor p"))
+
+# Imprimir la tabla
+mfo2_table
+
+# Calcular las predicciones para el modelo
+base$pred_p_formal <- predict(mfo2, newdata = base)
+
+# Crear la gráfica
+p_formal_plot <- ggplot(base, aes(x = ca_xe, y = pred_p_formal)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "aquamarine3") +
+  labs(
+    title = "Cargas administrativas y empresas formales",
+    x = "Cargas administrativas ($)",
+    y = "Proporción de empresas (%)",
+    caption = "Elaboración propia con datos de CE 2018 y ENCRIGE 2020") +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = 0))
+
+p_formal_plot
+
+
+#INFORMAL GENERAL
+mi1 <- lm(p_informal ~ ca_xe, data = base)
+
+summary(mi1)
+
+#INFORMAL CONTROLES
+mi2 <- lm(p_informal ~ ca_xe +
+            p_formal + pobreza + 
+            densidadpobkm2,
+          data = base)
+
+summary(mi2)
+
+vif(mi2)
+
+# Obtiene un data frame de los resultados del modelo
+mi2_tidy <- broom::tidy(mi2)
+
+# Convierte el data frame de los resultados del modelo en una tabla
+mi2_table <- kable(mi2_tidy, format = "pandoc", 
+                        caption = "Cargas administrativas y empresas informales", 
+                        col.names = c("Variable", "Estimado", "Error estándar", "Estadístico t", "Valor p"))
+
+# Imprimir la tabla
+mi2_table
+
+# Calcular las predicciones para el modelo
+base$pred_p_informal <- predict(mi2, newdata = base)
+
+# Crear la gráfica
+p_informal_plot <- ggplot(base, aes(x = ca_xe, y = pred_p_informal)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "darkslategrey") +
+  labs(
+    title = "Cargas administrativas y empresas informales",
+    x = "Cargas administrativas ($)",
+    y = "Proporción de empresas (%)",
+    caption = "Elaboración propia con datos de CE 2018 y ENCRIGE 2020") +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = 0))
+
+p_informal_plot
+
+
+# Gráfica conjunta
+
+control_plot234 <- ggplot() +
+  geom_point(data = base, aes(x = ca_xe, 
+                              y = pred_p_formal, color = "pred_p_formal")) +
+  geom_smooth(data = base, aes(x = ca_xe, 
+                               y = pred_p_formal, color = "pred_p_formal"), method = "lm", se = FALSE) +
+  geom_point(data = base, aes(x = ca_xe, 
+                              y = pred_p_informal, color = "pred_p_informal")) +
+  geom_smooth(data = base, aes(x = ca_xe, 
+                               y = pred_p_informal, color = "pred_p_informal"), method = "lm", se = FALSE) +
+  labs(title = "Cargas administrativas y tipo de empresas",
+       x = "Cargas administrativas ($)",
+       y = "Proporción de empresas (%)",
+       caption = "Elaboración propia con datos de CE 2018 y ENCRIGE 2020") +
+  theme_minimal() +
+  scale_color_manual(values = c("pred_p_formal" = "aquamarine3", "pred_p_informal" = "darkslategrey"),
+                     name = "Empresas",
+                     breaks = c("pred_p_formal", "pred_p_informal"),
+                     labels = c("Formales", "Informales")) +
+  theme(plot.caption = element_text(hjust = 0))
+
+control_plot234
+
+
+```
+
+## 1.2 Cargas vs Tamaño
+
+```{r}
+#Modelo 1.1 Tamaño vs Cargas
+
+
+##########MICROEMPRESAS
+
+# Regresión lineal para microempresas 
+micro_reg11 <- lm(p_micro ~ ca_xe, data = base)
+
+summary(micro_reg11)
+
+# Regresión controles microempresas
+micro_reg12 <- lm(p_micro ~ ca_xe +
+                      escolaridadprom +
+                      p_informal + 
+                      razondeingreso,
+                    data = base)
+
+summary(micro_reg12)
+
+vif(micro_reg12)
+
+# Obtiene un data frame de los resultados del modelo
+micro12_tidy <- broom::tidy(micro_reg12)
+
+# Convierte el data frame de los resultados del modelo en una tabla
+micro12_table <- kable(micro12_tidy, format = "pandoc", 
+                        caption = "Cargas administrativas y microempresas", 
+                        col.names = c("Variable", "Estimado", "Error estándar", "Estadístico t", "Valor p"))
+
+# Imprimir la tabla
+micro12_table
+
+# Calcular las predicciones para el modelo
+base$p_micro_pred <- predict(micro_reg12, base)
+
+# Crear la gráfica
+micro12_plot <- ggplot(base, aes(x = ca_xe, y = p_micro_pred)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "dodgerblue3") +
+  labs(
+    title = "",
+    x = "Cargas administrativas ($)",
+    y = "Porcentaje de empresas (%)",
+    caption = "") +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = 0))
+
+micro12_plot
+
+
+##########PEQUEÑAS EMPRESAS
+
+# Regresión lineal para pequeñas empresas
+pequena_reg11 <- lm(p_pequeña ~ ca_xe, data = base)
+
+summary(pequena_reg11)
+
+# Regresión controles pequeñas empresas
+pequena_reg12 <- lm(p_pequeña ~ ca_xe +
+                      p_informal +  
+                      razondeingreso,
+                    data = base)
+
+summary(pequena_reg12)
+
+vif(pequena_reg12)
+
+# Obtiene un data frame de los resultados del modelo
+pequena12_tidy <- broom::tidy(pequena_reg12)
+
+# Convierte el data frame de los resultados del modelo en una tabla
+pequena12_table <- kable(pequena12_tidy, format = "pandoc", 
+                        caption = "Cargas administrativas y pequeñas empresas", 
+                        col.names = c("Variable", "Estimado", "Error estándar", "Estadístico t", "Valor p"))
+
+# Imprimir la tabla
+pequena12_table
+
+# Calcular las predicciones para cada modelo
+
+base$p_pequena_pred <- predict(pequena_reg12, base)
+
+# Crear la gráfica
+pequena12_plot <- ggplot(base, aes(x = ca_xe, y = p_pequena_pred)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "deepskyblue") +
+  labs(
+    title = "Cargas administrativas y pequeñas empresas",
+    x = "Cargas administrativas ($)",
+    y = "Proporción de empresas (%)",
+    caption = "Elaboración propia con datos de CE 2018 y ENCRIGE 2020") +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = 0))
+
+pequena12_plot
+
+
+########## MEDIANAS EMPRESAS
+
+# Regresión lineal para medianas empresas
+mediana_reg11 <- lm(p_mediana ~ ca_xe, data = base)
+
+summary(mediana_reg11)
+                    
+# Regresión controles medianas empresas
+mediana_reg12 <- lm(p_mediana ~ ca_xe +
+                      delitos_2019 + escolaridadprom +
+                      p_informal + 
+                      razondeingreso,
+                    data = base)
+
+summary(mediana_reg12)
+
+vif(mediana_reg12)
+
+# Obtiene un data frame de los resultados del modelo
+mediana12_tidy <- broom::tidy(mediana_reg12)
+
+# Convierte el data frame de los resultados del modelo en una tabla
+mediana12_table <- kable(mediana12_tidy, format = "pandoc", 
+                        caption = "Cargas administrativas y medianas empresas", 
+                        col.names = c("Variable", "Estimado", "Error estándar", "Estadístico t", "Valor p"))
+
+# Imprimir la tabla
+mediana12_table
+
+# Calcular las predicciones para cada modelo
+
+base$p_mediana_pred <- predict(mediana_reg12, base)
+
+# Crear la gráfica
+mediana12_plot <- ggplot(base, aes(x = ca_xe, y = p_mediana_pred)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "goldenrod1") +
+  labs(
+    title = "Cargas administrativas y medianas empresas",
+    x = "Cargas administrativas ($)",
+    y = "Proporción de empresas (%)",
+    caption = "Elaboración propia con datos de CE 2018 y ENCRIGE 2020") +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = 0))
+
+mediana12_plot
+
+########## GRANDES EMPRESAS
+
+# Regresión lineal para grandes empresas
+grande_reg11 <- lm(p_grande ~ ca_xe, data = base)
+
+summary(grande_reg11)
+
+# Regresión controles grandes empresas
+grande_reg12 <- lm(p_grande ~ ca_xe +
+                      escolaridadprom +
+                      p_informal,
+                    data = base)
+
+summary(grande_reg12)
+
+vif(grande_reg12)
+
+# Obtiene un data frame de los resultados del modelo
+grande12_tidy <- broom::tidy(grande_reg12)
+
+# Convierte el data frame de los resultados del modelo en una tabla
+grande12_table <- kable(grande12_tidy, format = "pandoc", 
+                        caption = "Cargas administrativas y grandes empresas", 
+                        col.names = c("Variable", "Estimado", "Error estándar", "Estadístico t", "Valor p"))
+
+# Imprimir la tabla
+grande12_table
+
+# Calcular las predicciones para cada modelo
+
+base$p_grande_pred <- predict(grande_reg12, base)
+
+# Crear la gráfica
+grande12_plot <- ggplot(base, aes(x = ca_xe, y = p_grande_pred)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "indianred1") +
+  labs(
+    title = "",
+    x = "Cargas administrativas ($)",
+    y = "Porcentaje de empresas (%)",
+    caption = "") +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = 0))
+
+grande12_plot
+
+
+# Preparar los datos en formato largo
+base_long3 <- base %>%
+  gather(key = "Tamano_de_empresa", value = "Predicción",
+         p_micro_pred, p_pequena_pred, p_mediana_pred, p_grande_pred)
+
+# Convertir "Tamaño_de_empresa" a factor y cambiar el orden de los niveles
+base_long3$Tamano_de_empresa <- factor(base_long3$Tamano_de_empresa, 
+                                      levels = c("p_grande_pred", 
+                                                 "p_mediana_pred", 
+                                                 "p_pequena_pred", 
+                                                 "p_micro_pred"))
+
+# Crear la gráfica
+M12 <- ggplot(data = base_long3, aes(x = ca_xe, y = Predicción, color = Tamano_de_empresa)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Cargas administrativas y tamaño de empresas",
+       x = "Cargas administrativas ($)",
+       y = "Proporción de empresas (%)",
+       caption = "Elaboración propia con datos de CE 2018 y ENCRIGE 2020") +
+  theme_minimal() +
+  scale_color_manual(values = c("p_grande_pred" = "indianred1",
+                                "p_mediana_pred" = "goldenrod1",
+                                "p_pequena_pred" = "deepskyblue",
+                                "p_micro_pred" = "dodgerblue3"),
+                     name = "Tamaño de empresas",
+                     breaks = c("p_grande_pred",
+                                "p_mediana_pred",
+                                "p_pequena_pred",
+                                "p_micro_pred"),
+                     labels = c("Grandes", "Medianas", "Pequeñas", "Micro")) +
+  theme(plot.caption = element_text(hjust = 0))
+
+# Mostrar la gráfica
+M12
+
+
+```
+
+Guardamos los plots
+
+```{r}
+
+ggsave("LM2361-CE19-PLOT_ST_01.pdf", p_formal_plot, width = 7, height = 5, units = "in")
+ggsave("LM2361-CE19-PLOT_ST_02.pdf", p_informal_plot, width = 7, height = 5, units = "in")
+
+ggsave("LM2361-CE19-PLOT_ST_03.pdf", control_plot234, width = 7, height = 5, units = "in")
+
+ggsave("LM2361-CE19-PLOT_ST_04.pdf", micro12_plot, width = 7, height = 5, units = "in")
+ggsave("LM2361-CE19-PLOT_ST_05.pdf", pequena12_plot, width = 7, height = 5, units = "in")
+ggsave("LM2361-CE19-PLOT_ST_06.pdf", mediana12_plot, width = 7, height = 5, units = "in")
+ggsave("LM2361-CE19-PLOT_ST_07.pdf", grande12_plot, width = 7, height = 5, units = "in")
+
+ggsave("LM2361-CE19-PLOT_ST_08.pdf", M12, width = 7, height = 5, units = "in")
+
+```
+
+
+# 2. Comprobación de supuestos
+
+micro_reg12
+grande_reg12
+
+```{r}
+# Calcular la matriz de covarianza robusta
+vcov_robusto <- vcovHC(micro_reg12, type = "HC3")
+
+# Ver la matriz de covarianza robusta
+print(vcov_robusto)
+
+# Realizar pruebas de hipótesis con errores estándar robustos
+resultado_robusto <- coeftest(micro_reg12, vcov = vcov_robusto)
+
+# Ver el resumen
+print(resultado_robusto)
+
+
+###############
+
+# Calcular la matriz de covarianza robusta
+vcov_robusto <- vcovHC(grande_reg12, type = "HC3")
+
+# Ver la matriz de covarianza robusta
+print(vcov_robusto)
+
+# Realizar pruebas de hipótesis con errores estándar robustos
+resultado_robusto <- coeftest(grande_reg12, vcov = vcov_robusto)
+
+# Ver el resumen
+print(resultado_robusto)
+
+
+
+```
+
+
+## 2.1  Normalidad de residuos
+
+Normalidad de los residuos: Puedes usar un gráfico Q-Q de los residuos para verificar la normalidad. Los puntos deben caer aproximadamente en una línea recta si los residuos están normalmente distribuidos.
+
+```{r}
+#MODELO MICROEMPRESAS
+# Generar residuos
+residuos1 <- residuals(micro_reg12)
+
+# Crear gráfico Q-Q
+qqnorm(residuos1)
+qqline(residuos1)
+
+
+#MODELO GRANDES EMPRESAS
+# Generar residuos
+residuos2 <- residuals(grande_reg12)
+
+# Crear gráfico Q-Q
+qqnorm(residuos2)
+qqline(residuos2)
+
+
+#Para usar la prueba de Shapiro-Wilk para verificar la normalidad, generalmente mirarías el valor p. Si el valor p es menor que 0.05, entonces tienes evidencia para rechazar la hipótesis nula y puedes concluir que tus datos probablemente no provienen de una distribución normal. Si el valor p es mayor que 0.05, entonces no tienes suficiente evidencia para rechazar la hipótesis nula y puedes concluir que tus datos pueden provenir de una distribución normal.
+
+shapiro.test(residuos1)
+
+shapiro.test(residuos2)
+
+
+```
+
+## 2.2 Independencia de los errores 
+
+Un gráfico de los residuos en función de los valores ajustados o el orden temporal puede ayudar a identificar si existe una correlación entre los errores.
+
+```{r}
+#MODELO MICROEMPRESAS
+# Crear un gráfico de residuos vs valores ajustados
+ggplot(data = data.frame(Residuos = residuos1, Ajustados = fitted(micro_reg12)), aes(x = Ajustados, y = Residuos)) +
+  geom_point() +
+  geom_smooth(se = FALSE)  +
+  labs(title = "Gráfico de residuos vs valores ajustados: Microempresas",
+       caption = "Elaboración propia")
+
+
+#MODELO GRANDES EMPRESAS
+# Crear un gráfico de residuos vs valores ajustados
+ggplot(data = data.frame(Residuos = residuos2, Ajustados = fitted(grande_reg12)), aes(x = Ajustados, y = Residuos)) +
+  geom_point() +
+  geom_smooth(se = FALSE)  +
+  labs(title = "Gráfico de residuos vs valores ajustados: Grandes empresas",
+       caption = "Elaboración propia")
+
+```
+
+## 2.3 Linealidad de las relaciones entre las variables
+
+Para verificar la linealidad, puedes hacer gráficos de residuos contra cada variable predictora.
+
+```{r}
+# Gráfico de residuos contra cada variable predictora
+
+plot(micro_reg12)
+
+plot(grande_reg12)
+
+```
+
+## 2.4 Homocedasticidad
+
+Para comprobar la homocedasticidad (varianza constante de los errores), puedes hacer un gráfico de residuos contra valores ajustados. La dispersión de los puntos debe ser más o menos constante a lo largo del rango de valores ajustados.
+
+```{r}
+#También puedes usar la prueba de Breusch-Pagan para comprobar la homocedasticidad. Si el valor p es significativo (por lo general, p < 0.05), entonces tienes evidencia de heterocedasticidad.
+
+library(lmtest)
+
+# Prueba de Breusch-Pagan Micro empresas
+bptest(micro_reg12)
+
+# Prueba de Breusch-Pagan Grandes empresas
+bptest(grande_reg12)
+
+```
