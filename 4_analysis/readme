@@ -1,0 +1,23 @@
+Scripts description
+
+4_ce_vardis
+The script analyzes the distribution of independent and dependent variables in the final dataset, focusing on descriptive statistics, histograms, and skewness.
+
+5_reg_productivity
+Using linear regression models, the script analyzes the relationship between administrative burdens and business productivity. It differentiates the analysis by firm size (micro, small, medium, large) and type (formal, informal), considering control variables such as average schooling, labor informality, and population density.
+
+6_reg_size_type
+The script performs linear regression analysis to examine how administrative burdens (ca_xe) affect the proportion of firms by type (formal and informal), and size (micro, small, medium, large).
+
+7_reg_size_by_type
+The script performs linear regression analysis to evaluate how administrative burdens (ca_xe) affect the proportion of firms by size and type (formal and informal).
+
+Scripts 5, 6, and 7 include the following components:
+
+Visualization: Create graphs using ggplot2 to illustrate the relationship between administrative burdens and the proportions of companies, categorized by type and size.
+
+Assumption Assessment: Evaluate key statistical assumptions—normality, independence of errors, linearity, and homoscedasticity—through tests (e.g., Shapiro-Wilk, Breusch-Pagan) and residual plots.
+
+Tabular Results: Summarize model estimates and performance metrics in well-structured tables to facilitate interpretation.
+
+Graph Exporting: Save visualizations in suitable formats for documentation and future analysis.
