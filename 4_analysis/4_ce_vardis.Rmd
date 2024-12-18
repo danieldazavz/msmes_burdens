@@ -1,0 +1,492 @@
+---
+title: "Modelo V4"
+author: "D. Daza"
+date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
+output:
+  word_document:
+    toc: yes
+    toc_depth: 2
+header-includes:
+  - \usepackage{newtxtext,newtxmath}
+  - \usepackage{booktabs}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      error = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      comment = NA,
+                      fig.align = "center")
+```
+
+# Empecemos
+
+```{r, echo=FALSE}
+#Paquetería que será utilizada
+
+library(sjPlot)
+library(haven)
+library(tidyverse)
+library(broom)
+library(dplyr)
+library(DT)
+library(ggplot2)
+library(leaflet)
+library(sjmisc)
+library(sjlabelled)
+library(readxl)
+library(kableExtra)
+library(tidyr)
+library(rmarkdown)
+library(tinytex)
+library(knitr)
+
+library(stargazer)
+library(readr)
+library(data.table)
+library(officer)
+library(foreign)
+
+library(officer)
+library(openxlsx)
+library(corrplot)
+library(stringr)
+library(car)
+
+library(MASS)
+library(moments)
+
+```
+
+# Claves y nombres de los municipios de interés
+
+``` {r}
+#Definamos los códigos de los municipios de nuestro interés
+
+claves <- c("01001", "02002", "02004", "05030", "05035", "07089", "07101", "08019", "08037", "09002",
+            "09003", "09005", "09007", "09010", "09012", "09014", "09015", "09016", "09017", "11020",
+            "12001", "14039", "14120", "15033", "15057", "15058", "15104", "15106", "16052", "16053",
+            "19039", "20079", "21114", "22014", "24028", "25006", "26030", "27004", "28032", "30039",
+            "30193", "31050")
+
+#Creación con el nombre de los municipios que utilizaremos después
+
+municipios <- c("Aguascalientes", "Mexicali", "Tijuana", "Saltillo", 
+                        "Torreón", "Tapachula", "Tuxtla Gutiérrez", "Chihuahua",
+                        "Juárez", "Azcapotzalco", "Coyoacán", "Gustavo A. Madero",
+                        "Iztapalapa", "Álvaro Obregón", "Tlalpan", "Benito Juárez",
+                        "Cuauhtémoc", "Miguel Hidalgo", "Venustiano Carranza", "León",
+                        "Acapulco de Juárez", "Guadalajara", "Zapopan", "Ecatepec de Morelos",
+                        "Naucalpan de Juárez", "Nezahualcóyotl", "Tlalnepantla de Baz", "Toluca",
+                        "Lázaro Cárdenas", "Morelia", "Monterrey", "Salina Cruz",
+                        "Puebla", "Querétaro", "San Luis Potosí", "Culiacán",
+                        "Hermosillo", "Centro", "Reynosa", "Coatzacoalcos",
+                        "Veracruz", "Mérida")
+```
+
+# Carga de base de datos
+
+```{r}
+
+var <- read_excel("~/Procesamiento/Trabajo/LM2361-varctrl.xlsx")
+ca <- read_excel("~/Procesamiento/Trabajo/LM2361-cae2.xlsx")
+basefull <- read_excel("~/Procesamiento/Trabajo/LM2361-basefull.xlsx")
+
+#Unión de bases
+
+base <- merge(var, ca, by = "clavemuni", all = TRUE)
+base <- merge(base, basefull, by = "clavemuni", all = TRUE)
+
+```
+
+# 1. Distribución de variables independientes
+
+## 1.1 Estadística descriptiva
+
+```{r}
+
+summary(base$ca_xe)
+
+summary(base$delitos_2019)
+
+summary(base$vacbpercap)
+
+summary(base$escolaridadprom)
+
+summary(base$p_informal)
+
+summary(base$p_formal)
+
+summary(base$tasadesocupacion)
+
+summary(base$pobreza)
+
+summary(base$razondeingreso)
+
+summary(base$densidadpobkm2)
+
+```
+
+## 1.2 Histogramas
+
+```{r, eval = FALSE}
+
+ggplot(base, aes(ca_xe)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "ca_xe", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(delitos_2019)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "delitos_2019", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(vacbpercap)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "vacbpercap", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(escolaridadprom)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "escolaridadprom", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(p_informal)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "p_informal", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(p_formal)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "p_formal", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(tasadesocupacion)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "tasadesocupacion", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(pobreza)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "pobreza", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(razondeingreso)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "razondeingreso", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(densidadpobkm2)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "densidadpobkm2", y = "Frecuencia") +
+  theme_minimal()
+
+```
+
+## 1.3 Sesgo
+
+```{r}
+
+######################ca_xe
+# Calculamos el sesgo
+sescaxe <- skewness(base$ca_xe)
+
+# Imprimimos el valor de sesgo
+print(sescaxe)
+
+
+######################vacbpercap
+# Calculamos el sesgo
+sesvacbpercap <- skewness(base$vacbpercap)
+
+# Imprimimos el valor de sesgo
+print(sesvacbpercap)
+
+
+######################delitos_2019
+# Calculamos el sesgo
+sesdelitos_2019 <- skewness(base$delitos_2019)
+
+# Imprimimos el valor de sesgo
+print(sesdelitos_2019)
+
+
+######################escolaridadprom
+# Calculamos el sesgo
+sesescolaridadprom <- skewness(base$escolaridadprom)
+
+# Imprimimos el valor de sesgo
+print(sesescolaridadprom)
+
+
+######################p_informal
+# Calculamos el sesgo
+sesp_informal <- skewness(base$p_informal)
+
+# Imprimimos el valor de sesgo
+print(sesp_informal)
+
+
+######################p_formal
+# Calculamos el sesgo
+sesp_formal <- skewness(base$p_formal)
+
+# Imprimimos el valor de sesgo
+print(sesp_formal)
+
+
+######################tasadesocupacion
+# Calculamos el sesgo
+sestasadesocupacion <- skewness(base$tasadesocupacion)
+
+# Imprimimos el valor de sesgo
+print(sestasadesocupacion)
+
+
+######################pobreza
+# Calculamos el sesgo
+sespobreza <- skewness(base$pobreza)
+
+# Imprimimos el valor de sesgo
+print(sespobreza)
+
+
+######################razondeingreso
+# Calculamos el sesgo
+sesrazondeingreso <- skewness(base$razondeingreso)
+
+# Imprimimos el valor de sesgo
+print(sesrazondeingreso)
+
+
+######################densidadpobkm2
+# Calculamos el sesgo
+sesdensidadpobkm2 <- skewness(base$densidadpobkm2)
+
+# Imprimimos el valor de sesgo
+print(sesdensidadpobkm2)
+
+```
+
+# 2. Distribución de variables dependientes
+
+pro_micro
+pro_pequena
+pro_mediana
+pro_grande
+
+pro_formal
+pro_informa
+
+prod_prom_mi_f
+prod_prom_mi_i
+
+prod_prom_pe_f
+prod_prom_pe_i
+
+prod_prom_me_f
+prod_prom_me_i
+
+prod_prom_gr_f
+prod_prom_gr_i
+
+p_formal 
+p_informal
+ 
+p_micro 
+p_pequeña 
+p_mediana 
+p_grande 
+    
+p_mi_f 
+p_mi_i 
+
+p_pe_f 
+p_pe_i 
+
+p_me_f 
+p_me_i 
+
+p_gr_f
+p_gr_i
+
+## 2.1 Estadística descriptiva
+
+```{r}
+
+summary(base$pro_micro)
+summary(base$pro_pequena)
+summary(base$pro_mediana)
+summary(base$pro_grande)
+
+summary(base$pro_formal)
+summary(base$pro_informal)
+
+summary(base$prod_prom_mi_f)
+summary(base$prod_prom_mi_i)
+
+summary(base$prod_prom_pe_f)
+summary(base$prod_prom_pe_i)
+
+summary(base$prod_prom_me_f)
+summary(base$prod_prom_me_i)
+
+summary(base$prod_prom_gr_f)
+summary(base$prod_prom_gr_i)
+
+summary(base$p_formal)
+summary(base$p_informal)
+
+summary(base$p_micro)
+summary(base$p_pequeña)
+summary(base$p_mediana)
+summary(base$p_grande)
+
+summary(base$p_mi_f)
+summary(base$p_mi_i)
+
+summary(base$p_pe_f)
+summary(base$p_pe_i)
+
+summary(base$p_me_f)
+summary(base$p_me_i)
+
+summary(base$p_gr_f)
+summary(base$p_gr_i)
+
+```
+
+## 2.2 Histogramas
+
+```{r, eval = FALSE}
+
+ggplot(base, aes(ca_xe)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "ca_xe", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(delitos_2019)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "delitos_2019", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(vacbpercap)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "vacbpercap", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(escolaridadprom)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "escolaridadprom", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(p_informal)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "p_informal", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(p_formal)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "p_formal", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(tasadesocupacion)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "tasadesocupacion", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(pobreza)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "pobreza", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(razondeingreso)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "razondeingreso", y = "Frecuencia") +
+  theme_minimal()
+
+ggplot(base, aes(densidadpobkm2)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(x = "densidadpobkm2", y = "Frecuencia") +
+  theme_minimal()
+
+```
+
+## 2.3 Sesgo
+
+```{r}
+
+skewness(base$pro_micro)
+
+# Aplicamos el logaritmo
+base$pro_micro_log <- log(base$pro_micro)
+
+# Visualizar la distribución de tu variable transformada con un histograma
+hist(base$pro_micro_log)
+
+skewness(base$pro_pequena)
+skewness(base$pro_mediana)
+skewness(base$pro_grande)
+
+
+skewness(base$pro_formal)
+# Aplicamos el logaritmo
+base$pro_formal_log <- log(base$pro_formal)
+# Visualizar la distribución de tu variable transformada con un histograma
+hist(base$pro_formal_log)
+
+skewness(base$pro_informal)
+# Aplicamos el logaritmo
+base$pro_informal_log <- log(base$pro_informal)
+# Visualizar la distribución de tu variable transformada con un histograma
+hist(base$pro_informal_log)
+
+
+skewness(base$prod_prom_mi_f)
+skewness(base$prod_prom_mi_i)
+
+skewness(base$prod_prom_pe_f)
+skewness(base$prod_prom_pe_i)
+
+skewness(base$prod_prom_me_f)
+skewness(base$prod_prom_me_i)
+
+skewness(base$prod_prom_gr_f)
+skewness(base$prod_prom_gr_i)
+
+skewness(base$p_formal)
+skewness(base$p_informal)
+
+skewness(base$p_micro)
+skewness(base$p_pequeña)
+skewness(base$p_mediana)
+skewness(base$p_grande)
+
+skewness(base$p_mi_f)
+skewness(base$p_mi_i)
+
+skewness(base$p_pe_f)
+skewness(base$p_pe_i)
+
+skewness(base$p_me_f)
+skewness(base$p_me_i)
+
+skewness(base$p_gr_f)
+skewness(base$p_gr_i)
+
+
+vars <- c("pro_micro", "pro_pequena", "pro_mediana", "pro_grande", 
+          "pro_formal", "pro_informal", "prod_prom_mi_f", "prod_prom_mi_i", 
+          "prod_prom_pe_f", "prod_prom_pe_i", "prod_prom_me_f", "prod_prom_me_i", 
+          "prod_prom_gr_f", "prod_prom_gr_i", "p_formal", "p_informal", 
+          "p_micro", "p_pequeña", "p_mediana", "p_grande", "p_mi_f", 
+          "p_mi_i", "p_pe_f", "p_pe_i", "p_me_f", "p_me_i", "p_gr_f", "p_gr_i")
+
+for (var in vars) {
+  print(paste("Skewness of", var))
+  print(skewness(base[[var]]))
+}
+
+```

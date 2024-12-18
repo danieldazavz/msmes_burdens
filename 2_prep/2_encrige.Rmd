@@ -1,0 +1,842 @@
+---
+title: "4 ENCRIGE"
+author: "D. Daza"
+date: "`r format(Sys.time(), '%B %d, %Y | %H:%M:%S | %Z')`"
+output:
+  word_document:
+    toc: yes
+    toc_depth: 2
+header-includes:
+  - \usepackage{newtxtext,newtxmath}
+  - \usepackage{booktabs}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = TRUE,
+                      error = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      comment = NA,
+                      fig.align = "center")
+```
+
+# 0. Empecemos
+
+Paquetería
+
+```{r, echo=FALSE}
+
+#Paquetería que será utilizada
+
+library(sjPlot)
+library(haven)
+library(tidyverse)
+library(broom)
+library(dplyr)
+library(DT)
+library(ggplot2)
+library(leaflet)
+library(sjmisc)
+library(sjlabelled)
+library(readxl)
+library(kableExtra)
+library(tidyr)
+library(rmarkdown)
+library(tinytex)
+library(knitr)
+
+library(stargazer)
+library(readr)
+library(data.table)
+library(officer)
+library(foreign)
+
+library(officer)
+library(openxlsx)
+library(corrplot)
+library(stringr)
+library(Rcpp)
+library(car)
+
+```
+
+Creación de vectores
+
+```{r}
+
+claves <- c("01001", "02002", "02004", "05030", "05035", "07089", "07101", "08019", "08037", "09002",
+            "09003", "09005", "09007", "09010", "09012", "09014", "09015", "09016", "09017", "11020",
+            "12001", "14039", "14120", "15033", "15057", "15058", "15104", "15106", "16052", "16053",
+            "19039", "20079", "21114", "22014", "24028", "25006", "26030", "27004", "28032", "30039",
+            "30193", "31050")
+
+#Creación con el nombre de los municipios que utilizaremos después
+
+municipios <- c("Aguascalientes", "Mexicali", "Tijuana", "Saltillo", 
+                        "Torreón", "Tapachula", "Tuxtla Gutiérrez", "Chihuahua",
+                        "Juárez", "Azcapotzalco", "Coyoacán", "Gustavo A. Madero",
+                        "Iztapalapa", "Álvaro Obregón", "Tlalpan", "Benito Juárez",
+                        "Cuauhtémoc", "Miguel Hidalgo", "Venustiano Carranza", "León",
+                        "Acapulco de Juárez", "Guadalajara", "Zapopan", "Ecatepec de Morelos",
+                        "Naucalpan de Juárez", "Nezahualcóyotl", "Tlalnepantla de Baz", "Toluca",
+                        "Lázaro Cárdenas", "Morelia", "Monterrey", "Salina Cruz",
+                        "Puebla", "Querétaro", "San Luis Potosí", "Culiacán",
+                        "Hermosillo", "Centro", "Reynosa", "Coatzacoalcos",
+                        "Veracruz", "Mérida")
+
+```
+
+# 1. ENCRIGE
+
+Ahora es momento de trabajar con la base de datos de la Encuesta Nacional de Calidad Regulatoria e Impacto Gubernamental en las Empresas (ENCRIGE) 2020.
+
+```{r}
+#MI CÓDIGO AQUI
+
+#Carguemos la base de datos
+
+#encrige <- read_excel("C:/Users/danie/OneDrive - CIDE/4to Semestre/Tesina/modelo/datos/LM2361-simulacion_encrige.xlsx")
+
+encrige <- read.dbf("~/Procesamiento/Insumos/ENCRIGE/TR_ENCRIGE_2020.dbf")
+
+#str(encrige20)
+
+#Deben ser 21 variables, en caso contrario:
+
+##encrige20 <- select(encrige20, CONS, TIPO_EST, E03, E04, FAC_EXP, P1_1A, P1_1B, P1_3, P1_4, P1_4CAL, P1_5, P1_6, P5_1, P5_2, P5_3, P5_5, P5_7, P5_8, MUN_42, GRAN_SECTO)
+
+```
+
+Identificación de municipios faltantes.
+
+```{r}
+#Intentemos una nueva forma de unirlos:
+
+encrige$clavemuni <- paste0(encrige$E03, encrige$E04)
+
+#Filtremos la base para los 42 municipios
+
+# Filtrar las filas donde 'clavemuni' está en el vector 'claves'
+encrige20 <- encrige %>%
+  filter(clavemuni %in% claves)
+
+#Revisemos que sean los 42 que queremos
+
+unique(encrige20$clavemuni)
+
+```
+
+Entre los valores únicos deben encontrarse sí o sí los siguientes:
+
+Entidades
+"01" "02" "05" "07" "08" "09" "11" "12" "14" "15" "16" "19" "20" "21" "22" "24" "25" "26" "27" "28" "30" "31"
+
+Municipios
+"001" "002" "004" "030" "035" "089" "101" "019" "037" "010" "014" "003" "015" "005" "007" "016" "012" "017", "020" "039" "120" "058" "033" "057" "104" "106" "052" "053" "079" "114" "028" "006" "032" "193" "050"
+
+# 2. Limpieza de la base
+
+Corrección de variables
+
+```{r}
+#Reemplazar los valores NA, 99999999 y "b" con 0 en la variable P5_8
+
+encrige20 <- encrige20 %>%
+  mutate(P5_8 = replace(P5_8, is.na(P5_8)
+                        | P5_8 == 99999999
+                        | P5_8 == "b", 0))
+
+#RE-Clasifiquemos a las empresas según su tamaño
+
+#SIZE 1
+encrige20 <- encrige20 %>%
+  mutate(size1 = case_when(
+    P1_4 >= 0 & P1_4 <= 10 ~ 1,
+    P1_4 >= 11 & P1_4 <= 50 ~ 2,
+    P1_4 >= 51 & P1_4 <= 250 ~ 3,
+    P1_4 > 250 ~ 4,
+    TRUE ~ NA_real_))
+
+encrige20$size1 <- as.factor(encrige20$size1)
+
+#1 Micro 0 a 10
+#2 Peque 11 a 50
+#3 Mediana 51 a 250
+#4 Grande 251+
+
+encrige20 <- encrige20 %>%
+  mutate(
+    tamano_1 = case_when(
+      size1 == 1 ~ "Micro",
+      size1 == 2 ~ "Pequeña",
+      size1 == 3 ~ "Mediana",
+      size1 == 4 ~ "Grande")
+  )
+
+encrige20$tamano_1 <- as.factor(encrige20$tamano_1)
+
+#SIZE2
+
+encrige20 <- encrige20 %>%
+  mutate(size2 = case_when(
+    P1_4 >= 0 & P1_4 <= 5 ~ 1,
+    P1_4 >= 6 & P1_4 <= 10 ~ 2,
+    P1_4 >= 11 & P1_4 <= 50 ~ 3,
+    P1_4 > 50 ~ 4,
+    TRUE ~ NA_real_))
+
+encrige20$size2 <- as.factor(encrige20$size2)
+
+#1 Micro 0 a 5
+#2 Peque 6 a 10
+#3 Mediana 11 a 50
+#4 Grande 51+
+
+encrige20 <- encrige20 %>%
+  mutate(
+    tamano_2 = case_when(
+      size2 == 1 ~ "Micro",
+      size2 == 2 ~ "Pequeña",
+      size2 == 3 ~ "Mediana",
+      size2 == 4 ~ "Grande")
+  )
+
+encrige20$tamano_2 <- as.factor(encrige20$tamano_2)
+
+#Veamos el tipo de la variable Gran Sector
+class(encrige20$GRAN_SECTO)
+
+#Se corrige en caso de ser necesario
+encrige20$GRAN_SECTO <- as.factor(encrige20$GRAN_SECTO)
+
+#Veamos el tipo de la variable P1_1B
+class(encrige20$P1_1B)
+
+```
+
+ELiminar sectores 21, 22, 48, 49 y 52
+
+Eliminar establecimientos del sector servicios con más de 15,000 trabajadores porque se trata de empresas de outsourcing que reportaron a sus trabajadores como si laboraran en el establecimiento*
+
+```{r}
+# Convertir a string
+encrige20$P1_1B <- as.character(encrige20$P1_1B)
+
+encrige20f <- encrige20 %>%
+  # Filtrar por inicios de códigos
+  filter(!(str_sub(P1_1B, start = 1, end = 2) %in% c("21", "22", "23", "48", "49", "52")))
+
+encrige20f <- encrige20f %>%
+  mutate(Sector = case_when(
+    str_sub(P1_1B, start = 1, end = 2) %in% c("31", "32", "33") ~ "Manufacturas",
+    str_sub(P1_1B, start = 1, end = 2) %in% c("43", "46") ~ "Comercio",
+    str_sub(P1_1B, start = 1, end = 2) %in% c("51", "53", "54", "55", "56", "61", "62", "71", "72", "81") ~ "Servicios",
+    TRUE ~ NA_character_ # Para cualquier otro caso, asigna NA
+  ))
+
+# Cuenta de los NA en la variable "Sector"
+na_count_sector <- sum(is.na(encrige20f$Sector))
+
+# Imprimir el resultado
+print(paste("Número de NA en la variable 'Sector':", na_count_sector))
+
+#Filtremos observaciones NA
+
+encrige20f <- filter(encrige20f, !(Sector == "NA"))
+
+#Filtremos las empresas de outsourcing
+
+encrige20f <- encrige20f %>%
+  filter(!(Sector == "Servicios" & P1_4 > 15000))
+
+```
+
+# 3. Cargas administrativas
+
+Estimación de cargas administrativas
+
+x1f
+
+```{r}
+#Estimemos el gasto promedio en regulaciones por empleado, también llamadas cargas administrativas
+
+encrige20f <- encrige20f %>%
+  mutate(ca_xe = ifelse(P1_4 == 0, NA, P5_8 / P1_4))
+
+#Filtremos la base para omitir las observaciones con NA en la nueva variable
+
+encrige20f <- encrige20f %>% 
+  filter(!is.na(ca_xe))
+
+# Crear la nueva variable binaria tipo_fi
+
+encrige20f <- encrige20f %>%
+  mutate(tipo_fi = ifelse(ca_xe > 0, 0, 1))
+
+#0 es para las que sí tienen cargas (FORMAL probablemente)
+
+#1 es para aquellas que no tienen cargas (INFORMAL probablemente)
+
+#Creamos un data frame filtrado con tipo_fi == 0
+
+encrige20x1f <- encrige20f %>%
+  filter(tipo_fi == 0)
+
+```
+
+## 3.1 Estadística descriptiva general
+
+Eliminación de los dos valores más altos
+
+```{r}
+
+# Ordenamos el dataframe en orden ascendente de la variable ca_xe
+encrige20x1f <- encrige20x1f[order(encrige20x1f$ca_xe), ]
+
+# Excluimos las dos últimas filas
+encrige20x1f <- encrige20x1f[1:(nrow(encrige20x1f)-10), ]
+
+```
+
+Estadística descriptiva de la encuesta
+
+```{r}
+#Estadística descriptiva
+
+#GENERAL
+
+ds_encrige20x1f <- encrige20x1f %>%
+  filter(tipo_fi == 0) %>%
+  summarise(n_obs = n(),
+            mean_ca = round(mean(ca_xe), 2),
+            stdev_ca = round(sd(ca_xe), 2),
+            min_ca = round(min(ca_xe), 2),
+            q1_ca = round(quantile(ca_xe, probs = (0.25)), 2),
+            q3_ca = round(quantile(ca_xe, probs = (0.75)), 2),
+            max_ca = round(max(ca_xe), 2)) %>%
+  rename("No. obs." = n_obs,
+         "Media" = mean_ca,
+         "Desv. estándar" = stdev_ca,
+         "Mínimo" = min_ca,
+         "Q1" = q1_ca,
+         "Q3" = q3_ca,
+         "Máximo" = max_ca)
+
+#Tabla 1
+
+tab1 <- ds_encrige20x1f %>%
+  kable(caption = "1. Estadística descriptiva, datos brutos ",
+        format.args = list(decimal.mark = ".", big.mark = ","),
+        format = "pandoc", align = "c")
+
+tab1
+
+```
+
+Graficación de boxplot por sector y tamaño para identificar outliers
+
+Revisar qué estratificación de tamaño tiene menos outliers para utilizarlo en el siguiente paso
+
+```{r}
+# Reordenar los niveles del factor "tamano_1"
+encrige20x1f$tamano_1 <- factor(encrige20x1f$tamano_1, levels = c("Micro", "Pequeña", "Mediana", "Grande"))
+
+# Crear el gráfico
+fibp_sizexsecto_s1 <- ggplot(encrige20x1f, 
+                             aes(x = tamano_1, y = ca_xe, fill = tamano_1)) +
+  geom_boxplot() +
+  facet_wrap(~Sector, ncol = 3) +
+  labs(title = "Boxplots: Tamaño 1 por sector con outliers",
+       x = "Tamaño de empresas",
+       y = "Cargas administrativas",
+       fill = "Tamaño 1") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.title = element_text(hjust = 0.5))
+
+# Reordenar los niveles del factor "tamano_2"
+encrige20x1f$tamano_2 <- factor(encrige20x1f$tamano_2, levels = c("Micro", "Pequeña", "Mediana", "Grande"))
+
+fibp_sizexsecto_s2 <- ggplot(encrige20x1f, 
+                             aes(x = tamano_2, y = ca_xe, fill = tamano_2)) +
+  geom_boxplot() +
+  facet_wrap(~Sector, ncol = 3) +
+  labs(title = "Boxplots: Tamaño 2 por sector con outliers",
+       x = "Tamaño de empresas",
+       y = "Cargas administrativas",
+       fill = "Tamaño 2") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.title = element_text(hjust = 0.5))
+
+fibp_sizexsecto_s1
+fibp_sizexsecto_s2
+```
+
+Eliminación de outliers por sector y tamaño a través del IQR, 
+
+x2f
+ 
+Función para remover outliers
+
+```{r}
+#Función S1
+furemove_outliers2 <- function(data) {
+  data %>%
+    group_by(tamano_1, Sector) %>% #Seleccionar la estratificación apropiada
+    mutate(IQR = IQR(ca_xe, na.rm = TRUE),
+           Q1 = quantile(ca_xe, 0.25, na.rm = TRUE),
+           Q3 = quantile(ca_xe, 0.75, na.rm = TRUE)) %>%
+    filter(ca_xe > Q1 - 1.5 * IQR & ca_xe < Q3 + 1.5 * IQR) %>%
+    ungroup() %>%
+    select(-IQR, -Q1, -Q3)
+}
+
+# Usar la función en el dataframe
+encrige20x2f <- furemove_outliers2(encrige20x1f)
+
+```
+
+Graficación de boxplot por sector y tamaño SIN outliers.
+
+```{r}
+# Reordenar los niveles del factor "tamano_2"
+#encrige20x2f$tamano_2 <- factor(encrige20x2f$tamano_2, levels = c("Micro", "Pequeña", "Mediana", "Grande"))
+
+# Crear el gráfico
+fibp_sizexsecto <- ggplot(encrige20x2f, 
+                             aes(x = tamano_1, y = ca_xe, fill = tamano_1)) +
+  geom_boxplot() +
+  facet_wrap(~Sector, ncol = 3) +
+  labs(title = "Boxplots: Tamaño n por sector sin outliers",
+       x = "Tamaño de empresas",
+       y = "Cargas administrativas",
+       fill = "Tamaño n") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.title = element_text(hjust = 0.5))
+
+fibp_sizexsecto
+```
+
+Estadística descriptiva sin outliers: todas las observaciones
+
+```{r}
+#Sin outliers
+
+ds_encrige20x2f <- encrige20x2f %>%
+  summarise(n_obs = n(),
+            mean_ca = round(mean(ca_xe), 2),
+            stdev_ca = round(sd(ca_xe), 2),
+            min_ca = round(min(ca_xe), 2),
+            q1_ca = round(quantile(ca_xe, probs = (0.25)), 2),
+            q3_ca = round(quantile(ca_xe, probs = (0.75)), 2),
+            max_ca = round(max(ca_xe), 2)) %>%
+  rename("No. obs." = n_obs,
+         "Media" = mean_ca,
+         "Desv. estándar" = stdev_ca,
+         "Mínimo" = min_ca,
+         "Q1" = q1_ca,
+         "Q3" = q3_ca,
+         "Máximo" = max_ca)
+
+# Tablita filtrada
+tab2 <- ds_encrige20x2f %>%
+  kable(caption = "2. Estadística descriptiva para todas las observaciones",
+        format.args = list(decimal.mark = ".", big.mark = ","),
+        format = "pandoc", align = "c")
+
+tab2
+
+```
+
+Graficación sin outliers: todas las observaciones
+
+```{r}
+#Histograma y boxplot
+
+fibp_x2f <- ggplot(encrige20x2f, aes(x = "", y = ca_xe)) +
+  geom_boxplot(fill = "gray80", color = "black") +
+  labs(title = "Boxplot: Cargas administrativas todas las observaciones",
+       x = "Frecuencia",
+       y = "Cargas administrativas") +
+  theme_bw()
+
+fibp_x2f
+
+#Crea el histograma
+
+fihisto_x2f <- ggplot(encrige20x2f, aes(x = ca_xe)) +
+  geom_histogram(binwidth = 100, fill = "gray80", color = "black") +
+  labs(title = "Histograma: Cargas administrativas todas las observaciones",
+       x = "Cargas administrativas",
+       y = "Frecuencia") +
+  theme_bw()
+
+fihisto_x2f
+
+```
+
+## 3.2 Estadística descriptiva por tamaño, y sector y tamaño
+
+```{r}
+#Estadística descriptiva por tamaño de empresa
+
+ds_encrige20x2fsize <- encrige20x2f %>%
+  group_by(tamano_1) %>%
+  summarise(n = n(),
+            mean = mean(ca_xe, na.rm = TRUE),
+            sd = sd(ca_xe, na.rm = TRUE),
+            min = min(ca_xe, na.rm = TRUE),
+            q1 = quantile(ca_xe, 0.25, na.rm = TRUE),
+            q3 = quantile(ca_xe, 0.75, na.rm = TRUE),
+            max = max(ca_xe, na.rm = TRUE))
+
+#Tablas para los resultados anteriores
+
+tab3 <- ds_encrige20x2fsize %>%
+  kable("pipe", caption = "Estadística descriptiva por tamaño de empresa") %>%
+  kable_styling()
+
+tab3
+```
+
+Sector y tamaño
+```{r}
+#COMERCIO
+#Estadística descriptiva por sector y tamaño de empresa
+
+ds_encrige20x2fssc <- encrige20x2f %>%
+  filter(Sector == "Comercio") %>%
+  group_by(tamano_1) %>%
+  summarise(n = n(),
+            mean = mean(ca_xe, na.rm = TRUE),
+            sd = sd(ca_xe, na.rm = TRUE),
+            min = min(ca_xe, na.rm = TRUE),
+            q1 = quantile(ca_xe, 0.25, na.rm = TRUE),
+            q3 = quantile(ca_xe, 0.75, na.rm = TRUE),
+            max = max(ca_xe, na.rm = TRUE))
+
+#Tablas para los resultados anteriores
+
+tab4 <- ds_encrige20x2fssc %>%
+  kable("pipe", caption = "Sector comercio: Estadística descriptiva") %>%
+  kable_styling()
+
+tab4
+
+#Manufacturas
+#Estadística descriptiva por sector y tamaño de empresa
+
+ds_encrige20x2fssm <- encrige20x2f %>%
+  filter(Sector == "Manufacturas") %>%
+  group_by(tamano_1) %>%
+  summarise(n = n(),
+            mean = mean(ca_xe, na.rm = TRUE),
+            sd = sd(ca_xe, na.rm = TRUE),
+            min = min(ca_xe, na.rm = TRUE),
+            q1 = quantile(ca_xe, 0.25, na.rm = TRUE),
+            q3 = quantile(ca_xe, 0.75, na.rm = TRUE),
+            max = max(ca_xe, na.rm = TRUE))
+
+#Tablas para los resultados anteriores
+
+tab5 <- ds_encrige20x2fssm %>%
+  kable("pipe", caption = "Manufacturas: Estadística descriptiva") %>%
+  kable_styling()
+
+tab5
+
+#Servicios
+#Estadística descriptiva por sector y tamaño de empresa
+
+ds_encrige20x2fsss <- encrige20x2f %>%
+  filter(Sector == "Servicios") %>%
+  group_by(tamano_1) %>%
+  summarise(n = n(),
+            mean = mean(ca_xe, na.rm = TRUE),
+            sd = sd(ca_xe, na.rm = TRUE),
+            min = min(ca_xe, na.rm = TRUE),
+            q1 = quantile(ca_xe, 0.25, na.rm = TRUE),
+            q3 = quantile(ca_xe, 0.75, na.rm = TRUE),
+            max = max(ca_xe, na.rm = TRUE))
+
+#Tablas para los resultados anteriores
+
+tab6 <- ds_encrige20x2fsss %>%
+  kable("pipe", caption = "Servicios: Estadística descriptiva") %>%
+  kable_styling()
+
+tab6
+
+```
+
+Función boxplot simple
+
+```{r}
+#Función boxplot simple
+fubp_size <- function(data, title) {
+  ggplot(data, aes(x = tamano_1, y = ca_xe)) + #Seleccionar el tamaño
+    geom_boxplot(fill = "gray80", color = "black") +
+    labs(title = title,
+         x = "Tamaño de empresa",
+         y = "Cargas administrativas") +
+    theme_bw()}
+```
+
+Graficación de boxplots por tamaño de empresa únicamente
+
+```{r}
+fibp_size <- fubp_size(encrige20x2f,
+                        "Boxplot: Cargas administrativas por tamaño de empresa")
+
+fibp_size
+```
+
+Función histograma simple
+
+```{r}
+
+#Función 3 S1
+fuhisto_size1 <- function(data, title) {
+  ggplot(data, aes(x = ca_xe)) +
+    geom_histogram(fill = "gray80", color = "black") +
+    facet_wrap(~ tamano_1) +
+    labs(title = title,
+         x = "Cargas administrativas",
+         y = "Frecuencia") +
+    theme_bw()}
+
+```
+
+Gráficación de histogramas por tamaño de empresa únicamente
+
+```{r}
+#Histogramas
+
+fihisto_x2fs1 <- fuhisto_size1(encrige20x2f,
+                                        "Histogramas: Cargas administrativas por tamaño de empresa")
+
+fihisto_x2fs1
+
+```
+
+## 3.3 Pruebas ANOVA
+
+ANOVA por tamaño, 1
+
+```{r}
+anova_1 <- aov(ca_xe ~ tamano_1, data = encrige20x2f)
+
+summary(anova_1)
+
+tab_anova1 <- summary(anova_1)[[1]] %>%
+  as.data.frame() %>%
+  kable("pipe", caption = "Resultados del análisis ANOVA 1") %>%
+  kable_styling()
+
+tab_anova1
+```
+
+Validación de los supuestos del ANOVA 1
+
+```{r}
+###################VISUAL
+
+# Comprobación de la normalidad de los residuos con un gráfico Q-Q
+qqnorm(residuals(anova_1))
+qqline(residuals(anova_1))
+
+#La línea roja en el gráfico Q-Q representa la distribución que los residuos tendrían si fueran normales. Si los puntos (residuos) caen aproximadamente en esta línea, entonces puedes asumir la normalidad.
+
+
+# Comprobación de la homogeneidad de las varianzas con un gráfico de residuos vs valores ajustados
+plot(anova_1$fitted.values, anova_1$residuals, 
+     xlab="Valores ajustados", 
+     ylab="Residuos",
+     main="Gráfico de residuos vs valores ajustados")
+abline(h = 0, lty = 2)  # Agrega una línea horizontal en y = 0
+
+
+#Si hay un patrón o estructura en este gráfico, puede existir un problema con la homogeneidad de las varianzas. Si los puntos están aleatoriamente distribuidos alrededor de y = 0, entonces puedes asumir la homogeneidad de las varianzas.
+
+###################ESTADÍSTICA
+
+# Comprobar la normalidad de los residuos con la prueba de Shapiro-Wilk
+#shapiro.test(residuals(anova_1))
+
+# Comprobar la homogeneidad de las varianzas con la prueba de Levene
+leveneTest(anova_1)
+
+#En la prueba de Shapiro-Wilk, la hipótesis nula es que los datos están distribuidos normalmente. Por lo tanto, un valor de p mayor a 0.05 normalmente se interpreta como que los datos no violan la suposición de normalidad.
+
+#En la prueba de Levene, la hipótesis nula es que las varianzas son iguales para todos los grupos. Por lo tanto, un valor de p mayor a 0.05 normalmente se interpreta como que los datos no violan la suposición de homogeneidad de las varianzas.
+
+```
+
+Preparación de datos para los ANOVA por sector
+
+```{r}
+# Crear dataframes separados para cada sector
+encrige20x2f_comercio <- subset(encrige20x2f, Sector == "Comercio")
+encrige20x2f_manufacturas <- subset(encrige20x2f, Sector == "Manufacturas")
+encrige20x2f_servicios <- subset(encrige20x2f, Sector == "Servicios")
+
+```
+
+ANOVA sector comercio,  2
+
+```{r}
+anova_2 <- aov(ca_xe ~ tamano_1, data = encrige20x2f_comercio)
+
+summary(anova_2)
+
+tab_anova2 <- summary(anova_2)[[1]] %>%
+  as.data.frame() %>%
+  kable("pipe", caption = "Resultados del ANOVA: Comercio") %>%
+  kable_styling()
+
+tab_anova2
+```
+
+Validación de los supuestos del ANOVA 2
+
+```{r}
+
+# Comprobación de la normalidad de los residuos con un gráfico Q-Q
+qqnorm(residuals(anova_2))
+qqline(residuals(anova_2))
+
+# Comprobación de la homogeneidad de las varianzas con un gráfico de residuos vs valores ajustados
+plot(anova_2$fitted.values, anova_2$residuals, 
+     xlab="Valores ajustados", 
+     ylab="Residuos",
+     main="Gráfico de residuos vs valores ajustados")
+abline(h = 0, lty = 2)  # Agrega una línea horizontal en y = 0
+
+# Comprobar la normalidad de los residuos con la prueba de Shapiro-Wilk
+shapiro.test(residuals(anova_2))
+
+# Comprobar la homogeneidad de las varianzas con la prueba de Levene
+leveneTest(anova_2)
+
+```
+
+ANOVA sector manufacturas, 3
+
+```{r}
+anova_3 <- aov(ca_xe ~ tamano_1, data = encrige20x2f_manufacturas)
+
+summary(anova_3)
+
+tab_anova3 <- summary(anova_3)[[1]] %>%
+  as.data.frame() %>%
+  kable("pipe", caption = "Resultados del ANOVA: Manufacturas") %>%
+  kable_styling()
+
+tab_anova3
+```
+
+Validación de los supuestos del ANOVA 3
+
+```{r}
+
+# Comprobación de la normalidad de los residuos con un gráfico Q-Q
+qqnorm(residuals(anova_3))
+qqline(residuals(anova_3))
+
+# Comprobación de la homogeneidad de las varianzas con un gráfico de residuos vs valores ajustados
+plot(anova_3$fitted.values, anova_3$residuals, 
+     xlab="Valores ajustados", 
+     ylab="Residuos",
+     main="Gráfico de residuos vs valores ajustados")
+abline(h = 0, lty = 2)  # Agrega una línea horizontal en y = 0
+
+# Comprobar la normalidad de los residuos con la prueba de Shapiro-Wilk
+shapiro.test(residuals(anova_3))
+
+# Comprobar la homogeneidad de las varianzas con la prueba de Levene
+leveneTest(anova_3)
+
+```
+
+ANOVA sector servicios, 4
+
+```{r}
+anova_4 <- aov(ca_xe ~ tamano_1, data = encrige20x2f_servicios)
+
+summary(anova_4)
+
+tab_anova4 <- summary(anova_4)[[1]] %>%
+  as.data.frame() %>%
+  kable("pipe", caption = "Resultados del ANOVA: Servicios") %>%
+  kable_styling()
+
+tab_anova4
+```
+
+Validación de los supuestos del ANOVA 4
+
+```{r}
+# Comprobación de la normalidad de los residuos con un gráfico Q-Q
+qqnorm(residuals(anova_4))
+qqline(residuals(anova_4))
+
+# Comprobación de la homogeneidad de las varianzas con un gráfico de residuos vs valores ajustados
+plot(anova_4$fitted.values, anova_4$residuals, 
+     xlab="Valores ajustados", 
+     ylab="Residuos",
+     main="Gráfico de residuos vs valores ajustados")
+abline(h = 0, lty = 2)  # Agrega una línea horizontal en y = 0
+
+# Comprobar la normalidad de los residuos con la prueba de Shapiro-Wilk
+#shapiro.test(residuals(anova_4))
+
+# Comprobar la homogeneidad de las varianzas con la prueba de Levene
+leveneTest(anova_4)
+
+```
+
+---
+Agrupar las variables y guardar archivo
+
+```{r}
+ca_e1 <- encrige20x2f %>%
+  group_by(clavemuni) %>%
+  summarise(ca_xe = mean(ca_xe, na.rm = TRUE))
+
+write.xlsx(ca_e1, "~/Procesamiento/Trabajo/ca_e1.xlsx")
+```
+
+Estadística descriptiva final
+
+```{r}
+
+ds_cae1 <- ca_e1 %>%
+  summarise(n_obs = n(),
+            mean_ca = round(mean(ca_xe), 2),
+            stdev_ca = round(sd(ca_xe), 2),
+            min_ca = round(min(ca_xe), 2),
+            q1_ca = round(quantile(ca_xe, probs = (0.25)), 2),
+            q3_ca = round(quantile(ca_xe, probs = (0.75)), 2),
+            max_ca = round(max(ca_xe), 2)) %>%
+  rename("No. obs." = n_obs,
+         "Media" = mean_ca,
+         "Desv. estándar" = stdev_ca,
+         "Mínimo" = min_ca,
+         "Q1" = q1_ca,
+         "Q3" = q3_ca,
+         "Máximo" = max_ca)
+
+# Tablita filtrada
+tab7 <- ds_cae1 %>%
+  kable(caption = "Estadística descriptiva: cargas administrativas",
+        format.args = list(decimal.mark = ".", big.mark = ","),
+        format = "pandoc", align = "c")
+
+tab7
+
+```
+
+
