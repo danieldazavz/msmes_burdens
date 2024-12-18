@@ -17,8 +17,7 @@ Due to data access restrictions, the ENCRIGE and Economic Census databases used 
 
 Contents:
 R scripts for preparing and cleaning control variable data.
-Scripts for processing the Economic Census and ENCRIGE databases.
-ANOVA test scripts.
+Scripts for processing the Economic Census and ENCRIGE databases, including ANOVA test scripts.
 
 3_tables
 
