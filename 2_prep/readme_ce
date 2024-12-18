@@ -1,0 +1,15 @@
+Processing of the Economic Census database, imputation stages
+
+The original base contains 4,616,864 observations or companies. This dataset is reduced to 1,577,324 million when the base is filtered to the municipalities analyzed. Subsequently, the following steps are followed: observations with an NA (not available) value in any of the variables of interest are eliminated, as well as outsourcing firms and those belonging to the excluded activity classes. Once the base has been filtered, wage imputation is performed for owners and non-dependents of the business name to obtain the Levy (2018) index subsequently. This imputation is replicated according to the work of Levy (2018) and consists of five steps described below:
+
+Step 1. The average remuneration of salaried employees (blue-collar and administrative) in firms with less than 10 workers is calculated by region and sector of activity to 6 digits. This average remuneration is assigned to owners and non-dependent workers within the same region and 6-digit activity sector.
+
+Stage 2. The same procedure is carried out for workers in companies whose salaries have not been assigned in the previous stage but using the 5-digit sector.
+
+Step 3. The same procedure is performed for workers in companies whose salaries have not been assigned in the previous stages but are using the 4-digit sector.
+
+Step 4. For those workers in companies whose salaries have not been assigned in the previous stages, the same procedure is carried out, but using the 6-digit national sector average.
+
+Step 5.The same procedure is carried out for workers in companies whose salaries have not been assigned in the previous stages but using the 5-digit national sector average.
+
+Once the imputation is done, the total remunerations can be obtained to calculate the formality index for each company. To estimate the productivity of the companies, we first calculate the average number of hours worked by the paid personnel in order to assign this value to the owners and to the non-dependent personnel of the company, following the same logic used in the imputation of salaries. Once the imputation has been made, the total daily hours worked are obtained and multiplied by the number of days the company operated. The gross annual production is divided by the total hours worked. It should be noted that there were companies in which it was not possible to perform imputations; these were eliminated. After following the steps described above, the final sample is 1,516,688 companies.
