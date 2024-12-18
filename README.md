@@ -23,7 +23,7 @@ ANOVA test scripts.
 3_tables
 
 Contents:
-Processed datasets generated from the scripts in the 2_prep folder.
+Processed dataset generated from the scripts in the 2_prep folder.
 
 4_analysis
 
