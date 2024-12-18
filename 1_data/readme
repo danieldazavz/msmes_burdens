@@ -1,0 +1,28 @@
+1_varctrl
+The script analyzes several databases to create a control base with socioeconomic, demographic, and crime variables. First, specific municipalities are filtered by keys and names, selecting data on crime (2019), gross census value added (GCAV), schooling, unemployment, poverty, inequality (GINI), and population density. The bases are cleaned, standardized, and integrated using the municipal key as a unique identifier. Additional variables, such as VACB per capita, are calculated, and the columns are reorganized into a data frame called "varctrl." Finally, the correlation between selected variables is analyzed and visualized with a correlation matrix using corrplot.
+
+2_encrige
+This script analyzes the ENCRIGE 2020 database to estimate and examine the administrative burdens on micro, small, medium, and large enterprises at the municipal level. Initially, it filters relevant data from 42 key municipalities and classifies firms by size. 
+
+In addition, it excludes specific sectors (21, 22, 48, 49, and 52) and outliers, such as service companies with more than 15,000 employees.
+Subsequently, it calculates administrative burdens per employee and performs general descriptive statistics by sector (Commerce, Manufacturing, and Services). It implements graphs such as boxplots and histograms to explore distribution and outliers and applies ANOVA tests to evaluate statistical differences between firm sizes. Finally, it aggregates data at the municipal level and exports the results.
+
+3_ce
+The script processes data from the 2019 Economic Census to analyze business productivity and classify firms by size and type of formality using Levy's (2018) index. The flow of the script is detailed below:
+1.	Data cleaning:
+-Filters excluded sectors (21, 22, 48, 48, 49, 52) and outsourcing firms with over 15,000 employees.
+-Imputes missing values for salaries, hours worked, and related variables.
+-Calculates total annual wages and hours per establishment.
+2.	Calculation of indicators:
+-Estimates productivity as total gross output divided by annual hours worked.
+-Generates Levy's formality index (social security payments/remunerations) and classifies companies into formal, informal, and mixed.
+3.	Descriptive statistics:
+-Evaluates average productivity by size (micro, small, small, medium, large) and type of formality.
+-Disaggregates results by economic sectors: Commerce, Services, and Manufacturing.
+4.	Tables and visualization:
+-Creates summary tables of companies by size, type of formality, and average productivity.
+-Exports databases and tables for further analysis.
+5.	Output:
+-Bases with average productivity at the municipal level, by size and type of formality.
+-Disaggregated indicators for sectoral and structural productivity analysis.
+The output provides a detailed analysis of key business characteristics in the selected municipalities.
