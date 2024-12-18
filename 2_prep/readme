@@ -9,16 +9,20 @@ Subsequently, it calculates administrative burdens per employee and performs gen
 
 3_ce
 The script processes data from the 2019 Economic Census to analyze business productivity and classify firms by size and type of formality using Levy's (2018) index. The flow of the script is detailed below:
-1.	Data cleaning:
+1. Data cleaning:
 -Filters excluded sectors (21, 22, 48, 48, 49, 52) and outsourcing firms with over 15,000 employees.
 -Imputes missing values for salaries, hours worked, and related variables.
 -Calculates total annual wages and hours per establishment.
-2.	Calculation of indicators:
+2. Calculation of indicators:
 -Estimates productivity as total gross output divided by annual hours worked.
 -Generates Levy's formality index (social security payments/remunerations) and classifies companies into formal, informal, and mixed.
-3.	Descriptive statistics:
+3. Descriptive statistics:
 -Evaluates average productivity by size (micro, small, small, medium, large) and type of formality.
 -Disaggregates results by economic sectors: Commerce, Services, and Manufacturing.
-4.	Tables and visualization:
+4. Tables and visualization:
 -Creates summary tables of companies by size, type, and average productivity.
 -Exports databases and tables for further analysis.
+
+
+Activity classes excluded from the economic census sample:
+The activity classes that were excluded because they misreport their fixed assets are as follows: 532411, 611311, 334110, 512112, 561330, 327213, 721111, 713941, 312221, 711311, 622111, 324110, 513120, 561110, 321999, 531114, 321920, 322122, 531113, 327310, 312142. Financial services sector 52 was also excluded.
