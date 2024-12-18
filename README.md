@@ -6,7 +6,6 @@ Folder Structure
 
 1_data
 
-Contents:
 Raw data for control variables.
 List of municipalities of interest along with their identification keys.
 Simulation files (two included).
@@ -15,30 +14,25 @@ Due to data access restrictions, the ENCRIGE and Economic Census databases used 
 
 2_prep
 
-Contents:
 R scripts for preparing and cleaning control variable data.
 Scripts for processing the Economic Census and ENCRIGE databases, including ANOVA test scripts.
 
 3_tables
 
-Contents:
 Processed dataset generated from the scripts in the 2_prep folder.
 
 4_analysis
 
-Contents:
 R scripts for:
 Analyzing the distribution of variables from the Economic Census.
 Performing statistical tests, and regressions.
 
 5_figures
 
-Contents:
 Graphs and visualizations generated from the scripts in the 4_analysis folder.
 
 6_results
 
-Contents:
 Results tables for the Economic Census and ENCRIGE analysis, including:
 Descriptive statistics.
 ANOVA results.
