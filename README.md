@@ -7,7 +7,7 @@ Folder Structure
 1_data
 
 Raw data for control variables.
-List of municipalities of interest along with their identification keys.
+List of municipalities of interest along with their identification numbers.
 Simulation files (two included).
 Note:
 Due to data access restrictions, the ENCRIGE and Economic Census databases used in the analysis are not included here. These datasets are accessible only through INEGI's microdata laboratory.
